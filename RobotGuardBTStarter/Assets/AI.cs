@@ -25,25 +25,25 @@ public class AI : MonoBehaviour
     {
         agent = this.GetComponent<NavMeshAgent>();
         agent.stoppingDistance = shotRange - 5;         //velocidade dos disparos
-        InvokeRepeating("UpdateHealth",5,0.5f); 
+        InvokeRepeating("UpdateHealth", 5, 0.5f);
     }
 
     void Update()
     {
         Vector3 healthBarPos = Camera.main.WorldToScreenPoint(this.transform.position);
         healthBar.value = (int)health;                                                      // faz com que a barra de vida esteja sempre seguindo o BOT
-        healthBar.transform.position = healthBarPos + new Vector3(0,60,0);
+        healthBar.transform.position = healthBarPos + new Vector3(0, 60, 0);
     }
 
     void UpdateHealth()
     {
-       if(health < 100)             // O HP volta depois de um tempo fora de combate
-            health ++;
+        if (health < 100)             // O HP volta depois de um tempo fora de combate
+            health++;
     }
 
     void OnCollisionEnter(Collision col)
     {
-        if(col.gameObject.tag == "bullet")
+        if (col.gameObject.tag == "bullet")
         {
             health -= 10;           //Quantidade de HP removida pelos tiros do player
         }
@@ -60,10 +60,74 @@ public class AI : MonoBehaviour
     {
         if (Task.isInspected)
             Task.current.debugInfo = string.Format("t={0:0.00}", Time.time);
-        if(agent.remainingDistance <= agent.stoppingDistance && !agent.pathPending)
+        if (agent.remainingDistance <= agent.stoppingDistance && !agent.pathPending)
         {
             Task.current.Succeed();
         }
     }
+    [Task]
+    public void PickDestination(int x, int z) // vai para uma direção pre determinada
+    {
+        Vector3 dest = new Vector3(x, 0, z);
+        agent.SetDestination(dest);
+        Task.current.Succeed();
+
+    }
+    // --- 17/05/2021 ---
+    [Task]
+    public void TargetPlayer()  //mira no player
+    {
+        target = player.transform.position; Task.current.Succeed(); 
+    }
+    [Task]
+    public bool Fire()  // atira no player
+    {
+        GameObject bullet = GameObject.Instantiate(bulletPrefab, bulletSpawn.transform.position, bulletSpawn.transform.rotation); 
+        bullet.GetComponent<Rigidbody>().AddForce(bullet.transform.forward * 2000);
+        return true;
+    }
+    [Task]
+    public void LookAtTarget()  // olha para o alvo (player), fazendo rotacionar o canhão em sua direção  
+    {
+        Vector3 direction = target - this.transform.position;
+
+        this.transform.rotation = Quaternion.Slerp(this.transform.rotation, Quaternion.LookRotation(direction), Time.deltaTime * rotSpeed);
+        if (Task.isInspected)
+            Task.current.debugInfo = string.Format("angle={0}", Vector3.Angle(this.transform.forward, direction)); // mostra o algulo em que o canhão está sendo apontado
+        if (Vector3.Angle(this.transform.forward, direction) < 5.0f)
+        {
+            Task.current.Succeed();         // se o angulo for menor que o numero X execute a ação
+        }
+    }
+    [Task]
+    bool SeePlayer()    // verifica se o player está na mira, ou se é uma parede
+    {
+        Vector3 distance = player.transform.position - this.transform.position;
+        RaycastHit hit;
+        bool SeePlayer = false;
+        Debug.DrawRay(this.transform.position, distance, Color.red);    // cria um traço vermeho entre o player e o Droid
+        if (Physics.Raycast(this.transform.position, distance, out hit))
+        {
+            if (hit.collider.gameObject.tag == "wall")  // verifica  a tag do objeto
+            {
+                SeePlayer = true;   
+            }
+        }
+        if (Task.isInspected)   // mostra no console 
+            Task.current.debugInfo = string.Format("wall={0}", SeePlayer);  
+
+        if (distance.magnitude < visibleRange && !SeePlayer) 
+            return true;
+        else
+            return false;
+    }
+    [Task]
+    bool Turn (float angle) // leva o droid até uma posição sorteada
+    {
+        var p = this.transform.position + Quaternion.AngleAxis(angle, Vector3.up) * this.transform.forward;
+        target = p;
+        return true;
+    }
+
 }
 

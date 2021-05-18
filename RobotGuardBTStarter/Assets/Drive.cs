@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+// ---14/05/2017---
 public class Drive : MonoBehaviour {
 
 	float speed = 20.0F;        //velocidade de movimento
