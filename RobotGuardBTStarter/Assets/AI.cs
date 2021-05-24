@@ -128,6 +128,17 @@ public class AI : MonoBehaviour
         target = p;
         return true;
     }
-
+    [Task]
+    public bool IsHealthLessThan(float health)      // verifica e retorna a quantidade de energia que o inimigo possui
+    {
+        return this.health < health;
+    }
+    [Task]
+    public bool Explode()                           // faz com que o BOT "exploda" após sua barra de energia chegar a 0
+    {
+        Destroy(healthBar.gameObject);
+        Destroy(this.gameObject);
+        return true;
+    }
 }
 
